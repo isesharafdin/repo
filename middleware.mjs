@@ -22,23 +22,30 @@ versions.forEach((v, index) => {
     v.targetDownloads = Math.round((downloadWeights[index] / totalWeight) * totalDownloads);
 });
 
-// Function to simulate downloads
+// Function to perform a single download with delay
+function downloadWithDelay(version, targetDownloads, interval, downloadCount = 0) {
+    if (downloadCount < targetDownloads) {
+        const url = `https://registry.npmjs.org/${packageName}/-/${packageName}-${version}.tgz`;
+
+        https.get(url, (res) => {
+            if (res.statusCode === 200) {
+                versions.find(v => v.version === version).downloads++;
+                console.log(`Downloaded version ${version}: ${downloadCount + 1} times (Target: ${targetDownloads})`);
+            } else {
+                console.error(`Failed to download version ${version} with status code: ${res.statusCode}`);
+            }
+        }).on('error', (error) => {
+            console.error(`Error fetching URL for version ${version}:`, error);
+        });
+
+        setTimeout(() => downloadWithDelay(version, targetDownloads, interval, downloadCount + 1), interval);
+    }
+}
+
+// Function to start the download simulation with a delay
 function simulateDownloads() {
     versions.forEach((v) => {
-        const url = `https://registry.npmjs.org/${packageName}/-/${packageName}-${v.version}.tgz`;
-        
-        for (let i = 0; i < v.targetDownloads; i++) {
-            https.get(url, (res) => {
-                if (res.statusCode === 200) {
-                    v.downloads++;
-                    console.log(`Downloaded version ${v.version}: ${v.downloads} times (Target: ${v.targetDownloads})`);
-                } else {
-                    console.error(`Failed to download version ${v.version} with status code: ${res.statusCode}`);
-                }
-            }).on('error', (error) => {
-                console.error(`Error fetching URL for version ${v.version}:`, error);
-            });
-        }
+        downloadWithDelay(v.version, v.targetDownloads, 3000); // 3000 ms = 3 seconds
     });
 }
 
